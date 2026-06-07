@@ -47,12 +47,6 @@ Spin up the isolated Docker network (API, PostgreSQL, and Redis).
 docker compose up -d --build
 ```
 
-### 4. Run Database Migrations
-Stamp the PostgreSQL database with the necessary tables.
-```bash
-docker compose exec api alembic upgrade head
-```
-
 ### 5. Access the Engine
 * **Interactive API Docs (Swagger UI):** `http://localhost:8000/docs`
 * **Secure Chat Client:** `http://localhost:8000/chat`
