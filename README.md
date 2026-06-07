@@ -30,7 +30,7 @@ A production-grade, asynchronous chat application built with FastAPI, PostgreSQL
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/YOUR-USERNAME/real-time-chat.git
+git clone https://github.com/marwan-esam/real-time-chat.git
 cd real-time-chat
 ```
 
