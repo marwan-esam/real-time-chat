@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: chat_user
+      POSTGRES_PASSWORD: chat_password
+      POSTGRES_DB: chat_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chat_user -d chat_db"]
+      interval: 5s
+      retries: 5
+      timeout: 5s
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/code
+      - /code/venv # Hide the venv folder on the host machine
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+volumes:
+  postgres_data:
