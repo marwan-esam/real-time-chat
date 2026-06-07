@@ -9,3 +9,5 @@ pyjwt
 python-multipart
 python-dotenv
 redis
+pytest
+httpx

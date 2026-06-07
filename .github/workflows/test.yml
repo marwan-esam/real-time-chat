@@ -1,0 +1,27 @@
+name: CI/CD Engine Test
+
+on:
+  push:
+    branches: [ "main", "master" ]
+
+jobs:
+  test-architecture:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Inject CI/CD Environment Variables
+      run: |
+        echo "SECRET_KEY=super-secret-ci-cd-key-999" >> .env
+        echo "SQLALCHEMY_DATABASE_URL=postgresql://chat_user:chat_password@db/chat_db" >> .env
+
+    - name: Build and Boot Infrastructure
+      run: docker compose up -d --build
+
+    - name: Wait for PostgreSQL
+      run: sleep 5
+
+    - name: Run Automated Test Suite
+      run: docker compose exec -T api pytest
