@@ -7,6 +7,7 @@ import jwt
 from jwt.exceptions import InvalidTokenError
 from datetime import datetime, timedelta, timezone
 from dotenv import dotenv_values
+import redis.asyncio as redis
 
 from app import models, schemas
 from app.database import get_db
@@ -20,6 +21,9 @@ password_hash = PasswordHash.recommended()
 SECRET_KEY = config["SECRET_KEY"]
 ALGORITHM = "HS256"
 
+# Create Redis client for authentication
+redis_client = redis.Redis(host="redis", port=6379, decode_responses=True)
+
 oauth2_theme = OAuth2PasswordBearer(tokenUrl="token")
 
 
@@ -31,12 +35,18 @@ def verify_password(plain_password, hashed_password):
   return password_hash.verify(plain_password, hashed_password)
 
 
-def get_current_user(token: str = Depends(oauth2_theme), db: Session = Depends(get_db)):
+async def get_current_user(token: str = Depends(oauth2_theme), db: Session = Depends(get_db)):
   credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Could not validate credentials",
     headers={"WWW-Authenticate": "Bearer"},
   )
+
+  # Redis check to see if the token is in the blacklist
+  is_blacklisted = await redis_client.get(f"blacklist:{token}")
+
+  if is_blacklisted:
+    raise credentials_exception
 
   try:
     # Decoded token
@@ -100,3 +110,24 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 @router.get("/users/me", response_model=schemas.UserResponse)
 def read_users_me(current_user: models.User = Depends(get_current_user)):
   return current_user
+
+
+# Router 4: Logout and blacklist token
+@router.post("/logout", status_code=status.HTTP_200_OK)
+async def logout(token: str = Depends(oauth2_theme)):
+  try:
+    payload = jwt.decode(token, SECRET_KEY, [ALGORITHM])
+    exp = payload.get("exp")
+
+    current_time = datetime.now(timezone.utc).timestamp()
+    time_to_live = int(exp - current_time)
+
+    if time_to_live > 0:
+      # Set with Expiration. Redis will auto-delete it when time_to_live hits 0
+      await redis_client.setex(f"blacklist:{token}", time_to_live, "revoked")
+
+
+  except InvalidTokenError:
+    pass # Already logged out
+
+  return {"message": "Successfully logged out"}

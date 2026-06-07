@@ -13,7 +13,11 @@ from app.socket_manager import manager, redis_client
 router = APIRouter()
 
 # The WebSocket Security Guard
-def get_current_user_ws(token: str = Query(description="Authentication Token"), db: Session = Depends(get_db)):
+async def get_current_user_ws(token: str = Query(description="Authentication Token"), db: Session = Depends(get_db)):
+  is_blacklisted = await redis_client.get(f"blacklist:{token}")
+  if is_blacklisted:
+    raise WebSocketDisconnect()
+   
   try:
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     username: str = payload.get("sub")
