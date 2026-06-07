@@ -47,7 +47,7 @@ Spin up the isolated Docker network (API, PostgreSQL, and Redis).
 docker compose up -d --build
 ```
 
-### 5. Access the Engine
+### 4. Access the Engine
 * **Interactive API Docs (Swagger UI):** `http://localhost:8000/docs`
 * **Secure Chat Client:** `http://localhost:8000/chat`
 
